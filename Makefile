@@ -1,76 +1,38 @@
-.PHONY: help test test-verbose test-coverage test-race test-short lint fmt clean coverage-report build
+.PHONY: help test test-verbose test-coverage coverage-report clean deps test-run check
 
 help:
 	@echo "Available targets:"
 	@echo "  make test              - Run all tests"
 	@echo "  make test-verbose      - Run tests with verbose output"
 	@echo "  make test-coverage     - Run tests with coverage report"
-	@echo "  make test-race         - Run tests with race detector"
-	@echo "  make test-short        - Run only short tests"
 	@echo "  make coverage-report   - Generate HTML coverage report"
-	@echo "  make lint              - Run golangci-lint"
-	@echo "  make fmt               - Format code with gofmt"
-	@echo "  make build             - Build the binary"
-	@echo "  make clean             - Clean build artifacts"
+	@echo "  make clean             - Clean test artifacts"
+	@echo "  make deps              - Install development dependencies"
+	@echo "  make test-run          - Run tests matching a pattern"
+	@echo "  make check             - Run the default validation checks"
 
-# Run all tests
 test:
-	go test -v ./...
+	python -m pytest
 
-# Run tests with verbose output
 test-verbose:
-	go test -v -count=1 ./...
+	python -m pytest -vv
 
-# Run tests with coverage
 test-coverage:
-	go test -v -coverprofile=coverage.out ./...
-	go tool cover -func=coverage.out
+	python -m pytest --cov=gh_sync_labels --cov-report=term-missing
 
-# Run tests with race detector
-test-race:
-	go test -race -v ./...
+coverage-report:
+	python -m pytest --cov=gh_sync_labels --cov-report=html
+	@echo "Coverage report generated: htmlcov/index.html"
 
-# Run only short tests (skip integration tests)
-test-short:
-	go test -short -v ./...
-
-# Generate HTML coverage report
-coverage-report: test-coverage
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
-
-# Run linter
-lint:
-	golangci-lint run ./...
-
-# Format code
-fmt:
-	gofmt -w -s .
-	goimports -w .
-
-# Build the binary
-build:
-	go build -o gh-sync-labels ./cmd/gh-sync-labels
-
-# Clean build artifacts
 clean:
-	rm -f gh-sync-labels coverage.out coverage.html
-	go clean -testcache
+	rm -rf .pytest_cache .coverage htmlcov
 
-# Install dependencies
 deps:
-	go mod download
-	go mod tidy
+	python -m pip install -r requirements-dev.txt
 
-# Run specific test
 test-run:
-	@read -p "Enter test name (e.g., TestCreateLabel): " test; \
-	go test -v -run $$test ./...
+	@read -p "Enter pytest pattern: " test; \
+	python -m pytest -v -k "$$test"
 
-# Benchmark tests
-bench:
-	go test -bench=. -benchmem ./...
-
-# All checks before commit
-check: fmt lint test
+check: test
 	@echo "All checks passed!"
