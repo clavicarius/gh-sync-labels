@@ -133,17 +133,26 @@ class GitHubClient:
 
         logger.debug("Determining current repository...")
 
-        return cls.run(
-            cls,
+        result = subprocess.run(
             [
+                "gh",
                 "repo",
                 "view",
                 "--json",
                 "nameWithOwner",
                 "-q",
                 ".nameWithOwner",
-            ]
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
         )
+
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip())
+
+        return result.stdout.strip()
 
     def list_labels(self) -> dict[str, Label]:
         """
