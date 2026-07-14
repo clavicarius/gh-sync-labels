@@ -17,12 +17,13 @@ class TestGitHubClientInit:
         assert client.repository == "owner/repo"
         mock_get_repo.assert_not_called()
 
-    @mock.patch.object(GitHubClient, "get_current_repository")
-    def test_init_without_repository(self, mock_get_repo):
-        mock_get_repo.return_value = "current/repo"
+    @mock.patch("subprocess.run")
+    def test_init_without_repository(self, mock_run):
+        mock_run.return_value = mock.Mock(returncode=0, stdout="current/repo\n", stderr="")
+
         client = GitHubClient()
         assert client.repository == "current/repo"
-        mock_get_repo.assert_called_once()
+        mock_run.assert_called_once()
 
 
 class TestGitHubClientRun:
