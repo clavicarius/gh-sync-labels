@@ -82,11 +82,15 @@ class GitHubClient:
     All communication with GitHub should happen through this class.
     """
 
-    def __init__(self, repository: str | None = None) -> None:
+    def __init__(
+        self,
+        repository: str | None = None,
+        dry_run: bool = False,
+    ) -> None:
         self.repository = repository or self.get_current_repository()
+        self.dry_run = dry_run
 
-    @staticmethod
-    def run(args: list[str]) -> str:
+    def run(self, args: list[str]) -> str:
         """
         Execute a GitHub CLI command.
 
@@ -95,6 +99,13 @@ class GitHubClient:
         RuntimeError
             If the command exits with a non-zero exit code.
         """
+
+        if self.dry_run:
+            logger.info(
+                "[DRY-RUN] gh %s",
+                " ".join(args),
+            )
+            return ""
 
         result = subprocess.run(
             ["gh", *args],
@@ -123,6 +134,7 @@ class GitHubClient:
         logger.debug("Determining current repository...")
 
         return cls.run(
+            cls,
             [
                 "repo",
                 "view",
@@ -329,6 +341,63 @@ def load_labels(csv_file: Path) -> dict[str, Label]:
 
     return labels
     
+
+def export_labels(
+    labels: dict[str, Label],
+    output_file: Path,
+) -> None:
+    """
+    Export labels into CSV format.
+
+    Parameters
+    ----------
+    labels:
+        Dictionary of labels to export.
+    output_file:
+        Path to the output CSV file.
+    """
+
+    logger.info(
+        "Exporting labels to %s",
+        output_file,
+    )
+
+    with output_file.open(
+        "w",
+        encoding="utf-8",
+        newline="",
+    ) as file:
+
+        writer = csv.writer(
+            file,
+            delimiter=";",
+        )
+
+        writer.writerow(
+            [
+                "Category",
+                "Label",
+                "Color",
+                "Description",
+            ]
+        )
+
+        for label in labels.values():
+
+            writer.writerow(
+                [
+                    "",
+                    label.name,
+                    label.color,
+                    label.description,
+                ]
+            )
+
+    logger.info(
+        "Exported %s labels",
+        len(labels),
+    )
+
 
 ###############################################################################
 # Label Synchronization
@@ -598,6 +667,23 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "Show changes without applying them."
+        ),
+    )
+
+    parser.add_argument(
+        "--export",
+        metavar="FILE",
+        help=(
+            "Export existing GitHub labels "
+            "to CSV and exit."
+        ),
+    )
+
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug logging.",
@@ -634,7 +720,8 @@ def main() -> int:
         )
 
         client = GitHubClient(
-            repository=args.repo
+            repository=args.repo,
+            dry_run=args.dry_run,
         )
 
         logger.info(
@@ -642,15 +729,24 @@ def main() -> int:
             client.repository,
         )
 
-        desired_labels = load_labels(
-            csv_file
-        )
-
         existing_labels = client.list_labels()
 
         logger.info(
             "Existing GitHub labels: %s",
             len(existing_labels),
+        )
+
+        if args.export:
+
+            export_labels(
+                existing_labels,
+                Path(args.export),
+            )
+
+            return 0
+
+        desired_labels = load_labels(
+            csv_file
         )
 
         result = sync_labels(
@@ -717,7 +813,3 @@ if __name__ == "__main__":
     sys.exit(
         main()
     )
-
-
-
-
