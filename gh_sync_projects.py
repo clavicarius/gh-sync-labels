@@ -452,8 +452,10 @@ class GitHubClient:
     def create_project(self, project: Project) -> str:
         """Create a new project and return its node ID."""
 
-        repository_id = self.get_repository_node_id()
+        if self.dry_run:
+            return f"dry-run-project-{project.name}"
 
+        repository_id = self.get_repository_node_id()
         query = """
         mutation($ownerId: ID!, $title: String!, $description: String, $public: Boolean!) {
           createProjectV2(input: {
