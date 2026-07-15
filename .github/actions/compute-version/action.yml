@@ -1,0 +1,38 @@
+name: Compute next semantic version
+description: Computes the next v<major>.<minor>.<patch> tag and corresponding moving major tag.
+
+outputs:
+  next_tag:
+    description: Next full semantic version tag (e.g. v0.1.1)
+    value: ${{ steps.compute.outputs.next_tag }}
+  major_tag:
+    description: Moving major tag (e.g. v0)
+    value: ${{ steps.compute.outputs.major_tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute next patch version from existing tags
+      id: compute
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        semver_tags="$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+
+        if [ -z "${semver_tags}" ]; then
+          next_tag="v0.1.0"
+        else
+          latest_tag="$(printf "%s\n" "${semver_tags}" | sort -V | tail -n1)"
+          version="${latest_tag#v}"
+
+          IFS='.' read -r major minor patch <<< "${version}"
+          patch=$((patch + 1))
+
+          next_tag="v${major}.${minor}.${patch}"
+        fi
+
+        major_tag="v$(echo "${next_tag#v}" | cut -d. -f1)"
+
+        echo "next_tag=${next_tag}" >> "$GITHUB_OUTPUT"
+        echo "major_tag=${major_tag}" >> "$GITHUB_OUTPUT"
