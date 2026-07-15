@@ -524,8 +524,10 @@ class GitHubClient:
     ) -> str:
         """Create a project field and return its node ID."""
 
-        graphql_type = FIELD_TYPE_TO_GRAPHQL[field.field_type]
+        if self.dry_run:
+            return f"dry-run-field-{field.name}"
 
+        graphql_type = FIELD_TYPE_TO_GRAPHQL[field.field_type]
         query = """
         mutation($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!) {
           createProjectV2Field(input: {
@@ -657,11 +659,12 @@ class GitHubClient:
         """Delete a single-select field option."""
 
         query = """
-        mutation($optionId: ID!) {
+        mutation($fieldId: ID!, $optionId: ID!) {
           deleteProjectV2SingleSelectFieldOption(input: {
+            fieldId: $fieldId
             optionId: $optionId
           }) {
-            clientMutationId
+            deletedOptionId
           }
         }
         """
@@ -669,6 +672,7 @@ class GitHubClient:
         self.graphql(
             query,
             {
+                "fieldId": field_id,
                 "optionId": option_id,
             },
         )
