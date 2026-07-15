@@ -1,3 +1,15 @@
+# Versioning
+
+Automatic semantic version tags are managed by a GitHub Actions workflow.
+
+- Trigger: push to `main` (tag pushes are not a trigger); `pull_request` runs in dry-run mode.
+- Full tag format: `v<major>.<minor>.<patch>` (only tags matching `^v[0-9]+\.[0-9]+\.[0-9]+$` are considered).
+- Increment strategy: choose the highest existing full tag and increment **patch** only.
+- Initial version: `v0.1.0` if no matching tags exist.
+- Monotonicity: versions are globally monotonically increasing across all major versions (gaps allowed).
+- Moving major tag: update `v<major>` to point to the same commit as the newly created full tag.
+- Recursion protection: the workflow triggers on branch pushes only (not on tag pushes).
+
 ## Operational examples
 
 ### 1) First run (no existing semantic version tags)
