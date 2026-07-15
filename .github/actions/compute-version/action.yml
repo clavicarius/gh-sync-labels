@@ -18,15 +18,11 @@ runs:
       run: |
         set -euo pipefail
 
-        # Match only strict semver tags with v-prefix.
-        # Examples matched: v0.1.0, v12.34.56
-        # Non-matching tags are ignored.
         semver_tags="$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 
         if [ -z "${semver_tags}" ]; then
           next_tag="v0.1.0"
         else
-          # Sort semver tags naturally and pick the highest one.
           latest_tag="$(printf "%s\n" "${semver_tags}" | sort -V | tail -n1)"
           version="${latest_tag#v}"
 
@@ -40,6 +36,3 @@ runs:
 
         echo "next_tag=${next_tag}" >> "$GITHUB_OUTPUT"
         echo "major_tag=${major_tag}" >> "$GITHUB_OUTPUT"
-
-        echo "Computed next_tag=${next_tag}"
-        echo "Computed major_tag=${major_tag}"
