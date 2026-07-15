@@ -1,0 +1,4 @@
+Field;Option;Color;Description
+Priority;High;RED;Requires immediate attention
+Priority;Medium;YELLOW;Important but not urgent
+Priority;Low;GREEN;Can be addressed later
