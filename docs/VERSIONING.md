@@ -44,15 +44,16 @@ Existing tags include e.g. `v0.1.0`, `v0.1.1`, `v0.1.2`.
   - **no tags are created**
   - **no tags are pushed**
 
-### 4) Idempotent rerun / race-condition safety
+### 4) Serialization + idempotent rerun safety
 
-Case: computed tag already exists on `origin` (e.g. rerun or concurrent run already pushed it).
+Case: multiple `main` pushes happen close together, or a rerun sees an already-created full tag.
 
-- Workflow checks remote tags before creating the new tag.
-- If tag exists:
+- Workflow-level `concurrency` serializes runs per event/ref (`cancel-in-progress: false`), so `main` push runs queue instead of racing to create the same next tag.
+- Workflow checks remote tags before creating the new full tag.
+- If the full tag already exists:
   - run exits successfully
-  - no additional tag is created
-  - no push is performed
+  - no additional full tag is created
+  - moving major tag is still force-updated to point to that full tag
 
 ### 5) Non-semver tags present
 
