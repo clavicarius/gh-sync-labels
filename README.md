@@ -71,6 +71,8 @@ python gh_sync_projects.py \
 Detailed documentation:
 
 * [Usage](docs/usage.md)
+* [Usage (Labels)](docs/usage_sync_labels.md)
+* [Usage (Projects)](docs/usage_sync_projects.md)
 * [Configuration](docs/configuration.md)
 * [Architecture](docs/architecture.md)
 * [GitHub Actions](docs/github-actions.md)
