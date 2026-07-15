@@ -1,0 +1,55 @@
+name: Versioning
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    # basic recursion guard: do not run on tag pushes (already ensured by trigger),
+    # and optionally skip known bot actor if desired
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tags are up to date
+        run: git fetch --force --tags
+
+      - name: Compute next version
+        id: compute
+        uses: ./.github/actions/compute-version
+
+      - name: Create/update tags
+        env:
+          NEXT_TAG: ${{ steps.compute.outputs.next_tag }}
+          MAJOR_TAG: ${{ steps.compute.outputs.major_tag }}
+        run: |
+          set -euo pipefail
+
+          echo "Creating version tag: ${NEXT_TAG}"
+          git tag "${NEXT_TAG}"
+
+          echo "Updating moving major tag: ${MAJOR_TAG}"
+          git tag -f "${MAJOR_TAG}"
+
+          echo "Pushing tags"
+          git push origin "${NEXT_TAG}"
+          git push origin "${MAJOR_TAG}" --force
+
+      - name: Summary
+        run: |
+          {
+            echo "## Versioning result"
+            echo ""
+            echo "- next tag: \`${{ steps.compute.outputs.next_tag }}\`"
+            echo "- major tag: \`${{ steps.compute.outputs.major_tag }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
